@@ -37,7 +37,7 @@ func (s *TxMapSorter) Swap(i, j int) {
 
 // Less
 func (s *TxMapSorter) Less(i, j int) bool {
-	return s.transations[i].FirstSeen() < s.transations[j].FirstSeen()
+	return s.transations[i].GetFirstSeen() < s.transations[j].GetFirstSeen()
 }
 
 type TxPool struct {

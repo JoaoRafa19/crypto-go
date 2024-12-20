@@ -48,6 +48,6 @@ func TestSortTransactions(t *testing.T) {
 	txx := p.Transactions()
 
 	for i := 0; i < len(txx)-1; i++ {
-		assert.True(t, txx[i].FirstSeen() < txx[i+1].FirstSeen())
+		assert.True(t, txx[i].GetFirstSeen() < txx[i+1].GetFirstSeen())
 	}
 }

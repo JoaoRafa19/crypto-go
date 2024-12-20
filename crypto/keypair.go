@@ -12,11 +12,11 @@ import (
 )
 
 type PrivateKey struct {
-	key *ecdsa.PrivateKey
+	Key *ecdsa.PrivateKey
 }
 
 func (k PrivateKey) Sign(data []byte) (*Signature, error) {
-	r, s, err := ecdsa.Sign(rand.Reader, k.key, data)
+	r, s, err := ecdsa.Sign(rand.Reader, k.Key, data)
 	if err != nil {
 		return nil, err
 	}
@@ -33,7 +33,7 @@ func GeneratePrivateKey() PrivateKey {
 		panic(err)
 	}
 	return PrivateKey{
-		key: key,
+		Key: key,
 	}
 }
 
@@ -43,12 +43,12 @@ type PublicKey struct {
 
 func (k PrivateKey) PublicKey() PublicKey {
 	return PublicKey{
-		Key: &k.key.PublicKey,
+		Key: &k.Key.PublicKey,
 	}
 }
 
 func (k PrivateKey) ToBytes() []byte {
-	return k.key.D.Bytes()
+	return k.Key.D.Bytes()
 }
 
 func PrivateKeyFromBytes(data []byte) (PrivateKey, error) {
@@ -57,7 +57,7 @@ func PrivateKeyFromBytes(data []byte) (PrivateKey, error) {
 	privKey.PublicKey.Curve = elliptic.P256()
 	privKey.D = d
 	privKey.PublicKey.X, privKey.PublicKey.Y = elliptic.P256().ScalarBaseMult(d.Bytes())
-	return PrivateKey{key: privKey}, nil
+	return PrivateKey{Key: privKey}, nil
 }
 
 func (k PublicKey) ToBytes() []byte {
