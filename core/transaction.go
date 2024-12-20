@@ -15,6 +15,8 @@ type Transaction struct {
 
 	//cached version of tx data hash
 	hash types.Hash
+	// firstSeen is the tmiestamp of when this tx is first seen localy
+	firstSeen int64
 }
 
 func (tx *Transaction) Sign(privKey crypto.PrivateKey) error {
@@ -51,4 +53,21 @@ func (tx *Transaction) Verify() error {
 	}
 
 	return nil
+}
+
+func (tx *Transaction) Decode(dec Decoder[*Transaction]) error {
+	return dec.Decode(tx)
+}
+func (tx *Transaction) Encode(enc Encoder[*Transaction]) error {
+	return enc.Encode(tx)
+}
+
+// set firstSeen
+func (tx *Transaction) SetFirstSeen(t int64) {
+	tx.firstSeen = t
+}
+
+// get firstSeen
+func (tx *Transaction) FirstSeen() int64 {
+	return tx.firstSeen
 }

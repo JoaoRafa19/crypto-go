@@ -9,6 +9,8 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+var defaultBlockTime = time.Duration(time.Second * 5)
+
 type ServerOpts struct {
 	Transports []Transport
 	PrivateKey *crypto.PrivateKey
@@ -25,7 +27,9 @@ type Server struct {
 }
 
 func NewServer(opts ServerOpts) *Server {
-
+	if opts.BlockTime == time.Duration(0) {
+		opts.BlockTime = defaultBlockTime
+	}
 	return &Server{
 		ServerOpts:  opts,
 		memPool:     NewTxPool(),

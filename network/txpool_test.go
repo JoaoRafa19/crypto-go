@@ -1,7 +1,10 @@
 package network
 
 import (
+	"math/rand"
+	"strconv"
 	"testing"
+	"time"
 
 	"github.com/JoaoRafa19/crypto-go/core"
 	"github.com/stretchr/testify/assert"
@@ -25,4 +28,26 @@ func TestTxPoolAddTx(t *testing.T) {
 	assert.Empty(t, p.transactions)
 	assert.Zero(t, p.Len())
 
+}
+
+func TestSortTransactions(t *testing.T) {
+	p := NewTxPool()
+
+	txlen := 1000
+	for i := 0; i < txlen; i++ {
+		tx := core.NewTransaction([]byte(strconv.FormatInt(int64(i), 10)))
+		// Gera um valor exclusivo e suficientemente aleatório para FirstSeen
+		r := rand.New(rand.NewSource(time.Now().UnixNano()))
+		randomDelay := int64(r.Intn(1000)) // Adiciona uma variação aleatória
+		tx.SetFirstSeen(time.Now().UnixNano() * randomDelay * int64(i))
+		assert.Nil(t, p.Add(tx))
+	}
+
+	assert.Equal(t, txlen, p.Len())
+
+	txx := p.Transactions()
+
+	for i := 0; i < len(txx)-1; i++ {
+		assert.True(t, txx[i].FirstSeen() < txx[i+1].FirstSeen())
+	}
 }
