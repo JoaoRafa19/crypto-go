@@ -24,6 +24,7 @@ func main() {
 		Transports: []network.Transport{
 			trLocal,
 		},
+		
 	}
 
 	s := network.NewServer(opts)

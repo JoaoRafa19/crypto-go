@@ -1,10 +1,9 @@
-name: Go
+name: BuildAndTest
 
 on:
   push:
     branches: [ "main" ]
   pull_request:
-    branches: [ "main" ]
 
 jobs:
   build:
@@ -31,32 +30,66 @@ jobs:
     - name: Generate Coverage Summary
       run: |
         go tool cover -func=coverage/coverage.out > coverage/coverage-summary.txt
+        cat coverage/coverage-summary.txt
 
     - name: Generate Coverage Badge
       run: |
         coverage=$(go tool cover -func=coverage/coverage.out | grep total | awk '{print substr($3, 1, length($3)-1)}')
         echo "Coverage: $coverage%"
         
-        color="red"
-        echo "https://img.shields.io/badge/coverage-$coverage%25-$color"
-        curl -o coverage/badge.svg "https://img.shields.io/badge/coverage-$coverage%25-$color"
-        if  (( $(echo "$coverage < 80" | bc -l) )); then
-          exit 1
-        fi
-        if (( $(echo "$coverage >= 80" | bc -l) )); then
-          color="green"
+        if (( $(echo "$coverage < ${{ secrets.COVERAGE }}" | bc -l) )); then
+          color="red"
         elif (( $(echo "$coverage >= 50" | bc -l) )); then
           color="yellow"
+        else
+          color="green"
         fi
 
-    - name: Commit and Push Changes
+        echo "https://img.shields.io/badge/coverage-$coverage%25-$color"
+        curl -o coverage/badge.svg "https://img.shields.io/badge/coverage-$coverage%25-$color"
+
+    - name: Install lcov
+      run: sudo apt-get install -y lcov
+
+    - name: Convert Coverage.out to LCOV
+      run: |
+        go install github.com/matm/gocov2lcov@latest
+        gocov2lcov < coverage/coverage.out > coverage/coverage.lcov
+
+    - name: Generate Coverage HTML Report
+      run: |
+        genhtml coverage/coverage.lcov --output-directory coverage-html
+
+    - name: Coveralls
+      uses: coverallsapp/github-action@v2.3.0
+      if: always()
+      with:
+        github-token: ${{ secrets.github_token }}
+        file: coverage/coverage.lcov
+        format: lcov
+
+    - name: Combine Coverage Files
+      run: |
+        lcov --add-tracefile coverage/coverage.lcov -o coverage/combined.info
+
+    - name: Report Coverage
+      if: always()
+      uses: zgosalvez/github-actions-report-lcov@v1
+      with:
+        coverage-files: coverage/combined.info
+        minimum-coverage: ${{ secrets.COVERAGE }}
+        artifact-name: code-coverage-report
+
+    - name: Commit and Push Coverage Badge
       if: always()
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       run: |
         git config --global user.name "github-actions[bot]"
         git config --global user.email "github-actions[bot]@users.noreply.github.com"
-        git add coverage/badge.svg README.md
+        git fetch origin
+        git checkout ${{ github.head_ref || github.ref_name }}
+        git pull origin ${{ github.head_ref || github.ref_name }}
+        git add coverage/badge.svg
         git commit -m "Update coverage badge [skip ci]" || echo "No changes to commit"
-        git pull origin main
-        git push origin HEAD:main
+        git push origin HEAD:${{ github.head_ref || github.ref_name }}
