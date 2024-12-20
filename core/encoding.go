@@ -4,8 +4,6 @@ import (
 	"crypto/elliptic"
 	"encoding/gob"
 	"io"
-
-	"github.com/JoaoRafa19/crypto-go/crypto"
 )
 
 type Encoder[T any] interface {
@@ -22,9 +20,6 @@ type GobTxEncoder struct {
 
 func NewGobEncoder(w io.Writer) *GobTxEncoder {
 	gob.Register(elliptic.P256())
-	gob.Register(&crypto.PublicKey{})
-	gob.Register(&crypto.PrivateKey{})
-	gob.Register(&crypto.Signature{})
 	return &GobTxEncoder{
 		w,
 	}
@@ -40,9 +35,6 @@ type GobTxDecoder struct {
 
 func NewGobDecoder(r io.Reader) *GobTxDecoder {
 	gob.Register(elliptic.P256())
-	gob.Register(&crypto.PublicKey{})
-	gob.Register(&crypto.PrivateKey{})
-	gob.Register(&crypto.Signature{})
 	return &GobTxDecoder{
 		r,
 	}
