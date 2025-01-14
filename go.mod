@@ -1,6 +1,6 @@
 module github.com/JoaoRafa19/crypto-go
 
-go 1.22.5
+go 1.18
 
 require (
 	github.com/sirupsen/logrus v1.9.3

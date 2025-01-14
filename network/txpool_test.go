@@ -25,7 +25,7 @@ func TestTxPoolAddTx(t *testing.T) {
 	assert.Equal(t, p.Len(), 1)
 
 	p.Flush()
-	assert.Empty(t, p.transactions)
+	assert.Empty(t, p.trxs)
 	assert.Zero(t, p.Len())
 
 }

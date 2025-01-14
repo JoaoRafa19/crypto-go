@@ -1,3 +1,13 @@
+/***************************************************************
+ * Arquivo: server.go
+ * Descrição: Implementação do servidor de rede.
+ * Autor: JoaoRafa19
+ * Data de criação: 2024-2025
+ * Versão: 0.0.1
+ * Licença: MIT License
+ * Observações: 
+ ***************************************************************/
+
 package network
 
 import (
@@ -12,6 +22,10 @@ import (
 var defaultBlockTime = time.Duration(time.Second * 5)
 
 type ServerOpts struct {
+	// RPCHandler is responsible for handling remote procedure calls (RPCs)
+	// within the network server. It defines the methods and logic required
+	// to process incoming RPC requests and send appropriate responses.
+	RPCHandler RPCHandler
 	Transports []Transport
 	PrivateKey *crypto.PrivateKey
 	BlockTime  time.Duration
@@ -19,25 +33,29 @@ type ServerOpts struct {
 
 type Server struct {
 	ServerOpts
-	memPool     *TxPool
-	isValidator bool
-	rpcCh       chan RPC
-	blockTime   time.Duration
-	quitChan    chan struct{}
+	MemPool     *TxPool
+	IsValidator bool
+	RpcCh       chan RPC
+	QuitChan    chan struct{}
 }
 
 func NewServer(opts ServerOpts) *Server {
 	if opts.BlockTime == time.Duration(0) {
 		opts.BlockTime = defaultBlockTime
 	}
-	return &Server{
-		ServerOpts:  opts,
-		memPool:     NewTxPool(),
-		blockTime:   opts.BlockTime,
-		isValidator: opts.PrivateKey != nil,
-		rpcCh:       make(chan RPC),
-		quitChan:    make(chan struct{}),
+	
+	s := &Server{
+		opts,
+		NewTxPool(),
+		opts.PrivateKey != nil,
+		make(chan RPC),
+		make(chan struct{}),
 	}
+	if opts.RPCHandler == nil {
+		opts.RPCHandler = NewDefaultRPCHandler(s)
+	}
+	s.ServerOpts = opts
+	return s
 }
 
 func (s *Server) Start() {
@@ -46,12 +64,15 @@ func (s *Server) Start() {
 free:
 	for {
 		select {
-		case rpc := <-s.rpcCh:
+		case rpc := <-s.RpcCh:
 			fmt.Printf("%+v\n", rpc)
-		case <-s.quitChan:
+			if err := s.RPCHandler.HandleRPC(rpc); err != nil {
+				logrus.Error(err)
+			}
+		case <-s.QuitChan:
 			break free
 		case <-ticker.C:
-			if s.isValidator {
+			if s.IsValidator {
 				s.CreateNewBlock()
 				fmt.Println("creating a new block")
 			}
@@ -60,13 +81,10 @@ free:
 	fmt.Println("Server shutdown")
 }
 
-func (s *Server) handleTransactions(tx *core.Transaction) error {
-	if err := tx.Verify(); err != nil {
-		return err
-	}
+func (s *Server) ProcessTransaction(from NetAddr, tx *core.Transaction) error {
 	hash := tx.Hash(core.TxHasher{})
 
-	if s.memPool.Has(hash) {
+	if s.MemPool.Contains(hash) {
 		logrus.WithField(
 			"Adding New tx to mempool",
 			logrus.Fields{
@@ -76,6 +94,12 @@ func (s *Server) handleTransactions(tx *core.Transaction) error {
 		return nil
 	}
 
+	if err := tx.Verify(); err != nil {
+		return err
+	}
+
+	tx.SetFirstSeen(time.Now().UnixNano())
+
 	logrus.WithField(
 		"Adding New tx to mempool",
 		logrus.Fields{
@@ -83,7 +107,7 @@ func (s *Server) handleTransactions(tx *core.Transaction) error {
 		},
 	).Info("Add to mempool")
 
-	return s.memPool.Add(tx)
+	return s.MemPool.Add(tx)
 }
 func (s *Server) CreateNewBlock() error {
 	fmt.Println("create a new block")
@@ -95,7 +119,7 @@ func (s *Server) initTransports() {
 		go func(tr Transport) {
 			for rpc := range tr.Consume() {
 				// handle
-				s.rpcCh <- rpc
+				s.RpcCh <- rpc
 			}
 		}(tr)
 	}

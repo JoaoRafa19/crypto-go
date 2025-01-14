@@ -1,3 +1,13 @@
+/***************************************************************
+ * Arquivo: transaction_test.go
+ * Descrição: Testes para a estrutura de transação.
+ * Autor: JoaoRafa19
+ * Data de criação: 2024-2025
+ * Versão: 0.0.1
+ * Licença: MIT License
+ * Observações: 
+ ***************************************************************/
+
 package core
 
 import (

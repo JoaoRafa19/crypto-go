@@ -7,25 +7,25 @@ type Validator interface {
 }
 
 type BlockValidator struct {
-	bc *BlockChain
+	Bc *BlockChain
 }
 
 func NewBlockValidator(bc *BlockChain) *BlockValidator {
 	return &BlockValidator{
-		bc: bc,
+		Bc: bc,
 	}
 }
 
 func (v *BlockValidator) ValidateBlock(b *Block) error {
-	if v.bc.HasBlock(b.Height) {
+	if v.Bc.HasBlock(b.Height) {
 		return fmt.Errorf("chain alredy contains block (%d) with hash (%s)", b.Height, b.Hash(BlockHasher{}))
 	}
 
-	if b.Height != v.bc.Height()+1 {
+	if b.Height != v.Bc.Height()+1 {
 		return fmt.Errorf("block (%s) too high", b.Hash(BlockHasher{}))
 	}
 
-	prevHeader, err := v.bc.GetHeader(b.Height - 1)
+	prevHeader, err := v.Bc.GetHeader(b.Height - 1)
 	if err != nil {
 		return err
 	}

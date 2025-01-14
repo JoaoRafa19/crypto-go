@@ -13,8 +13,8 @@ func TestConnect(t *testing.T) {
 	tra.Connect(trb)
 	trb.Connect(tra)
 
-	assert.Equal(t, tra.peers[trb.addr], trb)
-	assert.Equal(t, trb.peers[tra.addr], tra)
+	assert.Equal(t, tra.Peers[trb.addr], trb)
+	assert.Equal(t, trb.Peers[tra.addr], tra)
 }
 
 func TestMessage(t *testing.T) {

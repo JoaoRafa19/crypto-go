@@ -32,7 +32,7 @@ func TestAddBlock(t *testing.T) {
 	}
 
 	assert.Equal(t, bc.Height(), uint32(lenBlocks))
-	assert.Equal(t, len(bc.headers), lenBlocks+1)
+	assert.Equal(t, len(bc.Headers), lenBlocks+1)
 
 	assert.NotNil(t, bc.AddBlock(randomBlock(89, types.Hash{})))
 }

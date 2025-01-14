@@ -1,3 +1,13 @@
+/***************************************************************
+ * Arquivo: hasher.go
+ * Descrição: Implementação da interface de hash.
+ * Autor: JoaoRafa19
+ * Data de criação: 2024-2025
+ * Versão: 0.0.1
+ * Licença: MIT License
+ * Observações: 
+ ***************************************************************/
+
 package core
 
 import (

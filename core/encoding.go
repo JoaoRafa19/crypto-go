@@ -1,3 +1,13 @@
+/***************************************************************
+ * Arquivo: encoding.go
+ * Descrição: Implementação de codificação e decodificação.
+ * Autor: JoaoRafa19
+ * Data de criação: 2024-2025
+ * Versão: 0.0.1
+ * Licença: MIT License
+ * Observações:
+ ***************************************************************/
+
 package core
 
 import (
@@ -20,13 +30,17 @@ type GobTxEncoder struct {
 
 func NewGobEncoder(w io.Writer) *GobTxEncoder {
 	gob.Register(elliptic.P256())
+	
+
 	return &GobTxEncoder{
-		w,
+		W: w,
 	}
+
 }
 
 func (e *GobTxEncoder) Encode(tx *Transaction) error {
-	return gob.NewEncoder(e.W).Encode(tx)
+	result := gob.NewEncoder(e.W).Encode(tx)
+	return result
 }
 
 type GobTxDecoder struct {
@@ -34,9 +48,8 @@ type GobTxDecoder struct {
 }
 
 func NewGobDecoder(r io.Reader) *GobTxDecoder {
-	gob.Register(elliptic.P256())
 	return &GobTxDecoder{
-		r,
+		R: r,
 	}
 }
 
