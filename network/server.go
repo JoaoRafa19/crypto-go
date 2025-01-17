@@ -86,7 +86,8 @@ func (s *Server) ProcessTransaction(from NetAddr, tx *core.Transaction) error {
 	if s.MemPool.Contains(hash) {
 		logrus.WithFields(
 			logrus.Fields{
-				"hash": fmt.Sprintf("%x", hash),
+				"hash":    fmt.Sprintf("%x", hash),
+				"message": "Transaction already in mempool",
 			},
 		).Info("Transaction already in mempool")
 		return nil
