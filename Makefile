@@ -1,15 +1,15 @@
 build:
-	go build -o ./bin/projectx
+	go1.18 build -o ./bin/projectx
 
 
 run: build
 	./bin/projectx
 
 tests:
-	go test -v ./...
+	go1.18 test -v ./...
 
 test:
-	go test ./...
+	go1.18 test ./...
 
 all: run
 	echo "Hello"

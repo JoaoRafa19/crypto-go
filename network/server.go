@@ -5,7 +5,7 @@
  * Data de criação: 2024-2025
  * Versão: 0.0.1
  * Licença: MIT License
- * Observações: 
+ * Observações:
  ***************************************************************/
 
 package network
@@ -43,7 +43,7 @@ func NewServer(opts ServerOpts) *Server {
 	if opts.BlockTime == time.Duration(0) {
 		opts.BlockTime = defaultBlockTime
 	}
-	
+
 	s := &Server{
 		opts,
 		NewTxPool(),
@@ -65,7 +65,6 @@ free:
 	for {
 		select {
 		case rpc := <-s.RpcCh:
-			fmt.Printf("%+v\n", rpc)
 			if err := s.RPCHandler.HandleRPC(rpc); err != nil {
 				logrus.Error(err)
 			}
@@ -85,10 +84,9 @@ func (s *Server) ProcessTransaction(from NetAddr, tx *core.Transaction) error {
 	hash := tx.Hash(core.TxHasher{})
 
 	if s.MemPool.Contains(hash) {
-		logrus.WithField(
-			"Adding New tx to mempool",
+		logrus.WithFields(
 			logrus.Fields{
-				"hash": tx.Hash(core.TxHasher{}),
+				"hash": fmt.Sprintf("%x", hash),
 			},
 		).Info("Transaction already in mempool")
 		return nil
@@ -100,12 +98,13 @@ func (s *Server) ProcessTransaction(from NetAddr, tx *core.Transaction) error {
 
 	tx.SetFirstSeen(time.Now().UnixNano())
 
-	logrus.WithField(
-		"Adding New tx to mempool",
+	logrus.WithFields(
 		logrus.Fields{
-			"hash": hash,
+			"hash":       fmt.Sprintf("%x", hash),
+			"mempoollen": s.MemPool.Len(),
 		},
-	).Info("Add to mempool")
+	).Info("adding a new transaction to mempool\n")
+	// TODO(@JoaoRafa19): broadcast this tx to peers
 
 	return s.MemPool.Add(tx)
 }

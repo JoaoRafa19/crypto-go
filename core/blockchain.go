@@ -65,7 +65,7 @@ func (bc *BlockChain) addBlockWithoutValidation(b *Block) error {
 	bc.Headers = append(bc.Headers, b.Header)
 	bc.Lock.Unlock()
 
-	logrus.WithField("Adding New Block", logrus.Fields{
+	logrus.WithFields(logrus.Fields{
 		"height": b.Height,
 		"hash":   b.Hash(BlockHasher{}),
 	}).Info("adding new block")
