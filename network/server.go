@@ -11,6 +11,7 @@
 package network
 
 import (
+	"bytes"
 	"fmt"
 	"time"
 
@@ -25,10 +26,11 @@ type ServerOpts struct {
 	// RPCHandler is responsible for handling remote procedure calls (RPCs)
 	// within the network server. It defines the methods and logic required
 	// to process incoming RPC requests and send appropriate responses.
-	RPCHandler RPCHandler
-	Transports []Transport
-	PrivateKey *crypto.PrivateKey
-	BlockTime  time.Duration
+	RPCDecodeFunc RPCDecodeFunc
+	RPCProcessor  RPCProcessor
+	Transports    []Transport
+	PrivateKey    *crypto.PrivateKey
+	BlockTime     time.Duration
 }
 
 type Server struct {
@@ -43,6 +45,9 @@ func NewServer(opts ServerOpts) *Server {
 	if opts.BlockTime == time.Duration(0) {
 		opts.BlockTime = defaultBlockTime
 	}
+	if opts.RPCDecodeFunc == nil {
+		opts.RPCDecodeFunc = DefaultRPCDecodeFunc
+	}
 
 	s := &Server{
 		opts,
@@ -51,10 +56,14 @@ func NewServer(opts ServerOpts) *Server {
 		make(chan RPC),
 		make(chan struct{}),
 	}
-	if opts.RPCHandler == nil {
-		opts.RPCHandler = NewDefaultRPCHandler(s)
-	}
+
 	s.ServerOpts = opts
+
+	// if RPCProcessor is not provided, use the server as the
+	// default RPC processor
+	if s.RPCProcessor == nil {
+		s.RPCProcessor = s
+	}
 	return s
 }
 
@@ -65,8 +74,14 @@ free:
 	for {
 		select {
 		case rpc := <-s.RpcCh:
-			if err := s.RPCHandler.HandleRPC(rpc); err != nil {
+			message, err := s.RPCDecodeFunc(rpc)
+			if err != nil {
+				logrus.Warn(err)
+				continue
+			}
+			if err := s.RPCProcessor.ProcessMessage(message); err != nil {
 				logrus.Error(err)
+				continue
 			}
 		case <-s.QuitChan:
 			break free
@@ -80,7 +95,26 @@ free:
 	fmt.Println("Server shutdown")
 }
 
-func (s *Server) ProcessTransaction(from NetAddr, tx *core.Transaction) error {
+func (s *Server) ProcessMessage(message *DecodedMessage) error {
+
+	switch msg := message.Data.(type) {
+	case *core.Transaction:
+		return s.processTransaction(msg)
+	default:
+		return fmt.Errorf("unknown message type: %T", msg)
+	}
+}
+
+func (s *Server) broadcast(payload []byte) error {
+	for _, tr := range s.Transports {
+		if err := tr.Broadcast(payload); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (s *Server) processTransaction(tx *core.Transaction) error {
 	hash := tx.Hash(core.TxHasher{})
 
 	if s.MemPool.Contains(hash) {
@@ -105,13 +139,25 @@ func (s *Server) ProcessTransaction(from NetAddr, tx *core.Transaction) error {
 			"mempoollen": s.MemPool.Len(),
 		},
 	).Info("adding a new transaction to mempool\n")
-	// TODO(@JoaoRafa19): broadcast this tx to peers
+
+	go s.broadcastTx(tx)
 
 	return s.MemPool.Add(tx)
 }
 func (s *Server) CreateNewBlock() error {
 	fmt.Println("create a new block")
 	return nil
+}
+
+func (s *Server) broadcastTx(tx *core.Transaction) error {
+	buf := &bytes.Buffer{}
+
+	if err := tx.Encode(core.NewGobEncoder(buf)); err != nil {
+		return err
+	}
+
+	msg := NewMessage(MessageTypeTx, buf.Bytes())
+	return s.broadcast(msg.Bytes())
 }
 
 func (s *Server) initTransports() {

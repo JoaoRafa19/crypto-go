@@ -12,12 +12,12 @@ package network
 
 import (
 	"bytes"
-	"crypto/elliptic"
 	"encoding/gob"
 	"fmt"
 	"io"
 
 	"github.com/JoaoRafa19/crypto-go/core"
+	"github.com/sirupsen/logrus"
 )
 
 type MessageType byte
@@ -50,39 +50,35 @@ type RPC struct {
 	Payload io.Reader
 }
 
-type RPCHandler interface {
-	HandleRPC(rpc RPC) error
+type DecodedMessage struct {
+	From NetAddr
+	Data any
 }
+type RPCDecodeFunc func(RPC) (*DecodedMessage, error)
 
-type DefaultRPCHandler struct {
-	P RPCProcessor
-}
+func DefaultRPCDecodeFunc(rpc RPC) (*DecodedMessage, error) {
 
-func NewDefaultRPCHandler(p RPCProcessor) RPCHandler {
-	gob.Register(elliptic.P256())
-
-	return &DefaultRPCHandler{
-		P: p,
-	}
-}
-
-func (h *DefaultRPCHandler) HandleRPC(rpc RPC) error {
 	msg := Message{}
 	if err := gob.NewDecoder(rpc.Payload).Decode(&msg); err != nil {
-		return fmt.Errorf("failed to decode message from %s:%s", rpc.From, err)
+		return nil, fmt.Errorf("failed to decode message from %s:%s", rpc.From, err)
 	}
+	logrus.WithFields(logrus.Fields{
+		"from": rpc.From,
+		"type": msg.Header,
+	}).Debug("new incomming message")
+	
 	switch msg.Header {
 	case MessageTypeTx:
 		tx := new(core.Transaction)
 		if err := tx.Decode(core.NewGobDecoder(bytes.NewReader(msg.Data))); err != nil {
-			return err
+			return nil, err
 		}
-		return h.P.ProcessTransaction(rpc.From, tx)
+		return &DecodedMessage{From: rpc.From, Data: tx}, nil
 	default:
-		return fmt.Errorf("invalid message header %d", msg.Header)
+		return nil, fmt.Errorf("invalid message header %d", msg.Header)
 	}
 }
 
 type RPCProcessor interface {
-	ProcessTransaction(NetAddr, *core.Transaction) error
+	ProcessMessage(*DecodedMessage) error
 }

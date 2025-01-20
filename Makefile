@@ -1,18 +1,14 @@
 build:
-	go1.18 build -o ./bin/projectx
-
+	@go build -o ./bin/projectx
 
 run: build
 	./bin/projectx
 
 tests:
-	go1.18 test -v ./...
+	@go test -v ./...
 
 test:
-	go1.18 test ./...
-
-all: run
-	echo "Hello"
+	@go test ./...
 
 test_coverage:
 	@mkdir -p coverage
