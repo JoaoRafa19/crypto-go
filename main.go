@@ -14,6 +14,7 @@ import (
 	"bytes"
 	"crypto/ecdsa"
 	"encoding/gob"
+	"log"
 	"math/big"
 	"math/rand"
 	"strconv"
@@ -50,15 +51,20 @@ func main() {
 			time.Sleep(time.Second * 2)
 		}
 	}()
+	privKey := crypto.GeneratePrivateKey()
 
 	opts := network.ServerOpts{
 		Transports: []network.Transport{
 			trLocal,
 		},
+		PrivateKey: &privKey,
+		ID:         "LOCAL",
 	}
 
-	s := network.NewServer(opts)
-
+	s, err := network.NewServer(opts)
+	if err != nil {
+		log.Fatal(err)
+	}
 	s.Start()
 }
 

@@ -1,16 +1,6 @@
-/***************************************************************
- * Arquivo: README.md
- * Descrição: Documentação do projeto.
- * Autor: JoaoRafa19
- * Data de criação: 2024-2025
- * Versão: 0.0.1
- * Licença: MIT License
- * Observações: 
- ***************************************************************/
-
 # Teste Aprendendo Conceitos de Blockchain
 
-Generic propose blockchain for uses like office files, criptocurrency
+Made from scratch, generic propose, production ready blockchain for uses like office files, criptocurrency
 Build using TDD
 
 
@@ -20,20 +10,24 @@ Build using TDD
 
 ## Features
 
-- [ ] Server
+- [v] Server
+	- [X] Creating blocks
 - [X] Block
     - [X] Block's hash
     - [x] Test
 - [X] Transaction
     - [x] Transaction list Hash
     - [x] Test
-- [ ] Key
-- [ ] Transport => tcp, udp, 
+- [x] Key
+- [x] Transport => tcp, udp, 
     - [X] Local transport layer
 - [X] Crypto Keypairs and signature
 - [X] Block Signing
 - [X] Blockchain struct
-- [ ] Storage (not memory storage)
+- [X] Storage (memory storage)
+- [X] Transaction Encoding/Decoding
+- [X] Block Encoding/Decoding
+
 
 
 ## Todos
@@ -82,6 +76,12 @@ func (tx *Transaction) Sign(privKey crypto.PrivateKey) error {
 ## Instalação
 
 Para instalar as dependências do projeto, execute:
+```bash
+go mod tidy
+```
+Para executar o projeto 
+```
+make run
 ```
 
 ## Como Contribuir

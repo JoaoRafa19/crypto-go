@@ -5,7 +5,7 @@
  * Data de criação: 2024-2025
  * Versão: 0.0.1
  * Licença: MIT License
- * Observações: 
+ * Observações:
  ***************************************************************/
 
 package core
@@ -49,14 +49,14 @@ func TestTxEncodeDecode(t *testing.T) {
 	tx := randomTxWithSignature(t)
 	buf := &bytes.Buffer{}
 	assert.Nil(t, tx.Encode(NewGobEncoder(buf)))
-	
+
 	txDecoded := new(Transaction)
 	assert.Nil(t, txDecoded.Decode(NewGobDecoder(buf)))
-	assert.Equal(t, tx, txDecoded)
+	assert.Equal(t, &tx, txDecoded)
 }
-func randomTxWithSignature(t *testing.T) *Transaction {
+func randomTxWithSignature(t *testing.T) Transaction {
 	privKey := crypto.GeneratePrivateKey()
-	tx := &Transaction{
+	tx := Transaction{
 		Data: []byte("foo bar baz"),
 	}
 
