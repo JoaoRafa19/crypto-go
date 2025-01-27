@@ -11,6 +11,7 @@ Build using TDD
 ## Features
 
 - [v] Server
+	- [X] Creating blocks
 - [X] Block
     - [X] Block's hash
     - [x] Test
