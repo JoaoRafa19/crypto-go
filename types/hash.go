@@ -2,6 +2,7 @@ package types
 
 import (
 	"fmt"
+	"encoding/hex"
 )
 
 type Hash [32]uint8
@@ -13,6 +14,10 @@ func (h Hash) IsZero() bool {
 		}
 	}
 	return true
+}
+
+func (h Hash) String() string {
+	return hex.EncodeToString(h[:])
 }
 
 func HashFromBytes(b []byte) Hash {

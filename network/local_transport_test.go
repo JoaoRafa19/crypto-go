@@ -16,6 +16,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+
 func TestConnect(t *testing.T) {
 	tra := NewLocalTransport("A").(*LocalTransport)
 	trb := NewLocalTransport("B").(*LocalTransport)
