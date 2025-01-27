@@ -9,7 +9,8 @@ import (
 )
 
 func TestProcessMessage_ValidTransaction(t *testing.T) {
-	server := NewServer(ServerOpts{})
+	server, err := NewServer(ServerOpts{})
+	assert.Nil(t, err)
 	privKey := crypto.GeneratePrivateKey()
 	tx := core.NewTransaction(nil)
 	tx.Sign(privKey)
@@ -19,7 +20,7 @@ func TestProcessMessage_ValidTransaction(t *testing.T) {
 		Data: tx,
 	}
 
-	err := server.ProcessMessage(decodedMsg)
+	err = server.ProcessMessage(decodedMsg)
 	assert.Nil(t, err)
 	assert.Equal(t, 1, server.MemPool.Len())
 	assert.True(t, server.MemPool.Contains(tx.Hash(core.TxHasher{})))

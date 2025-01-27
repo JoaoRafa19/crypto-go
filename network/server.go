@@ -18,6 +18,7 @@ import (
 
 	"github.com/JoaoRafa19/crypto-go/core"
 	"github.com/JoaoRafa19/crypto-go/crypto"
+	"github.com/JoaoRafa19/crypto-go/types"
 	"github.com/go-kit/log"
 )
 
@@ -41,10 +42,11 @@ type Server struct {
 	MemPool     *TxPool
 	IsValidator bool
 	RpcCh       chan RPC
+	chain       *core.BlockChain
 	QuitChan    chan struct{}
 }
 
-func NewServer(opts ServerOpts) *Server {
+func NewServer(opts ServerOpts) (*Server, error) {
 	if opts.BlockTime == time.Duration(0) {
 		opts.BlockTime = defaultBlockTime
 	}
@@ -56,13 +58,18 @@ func NewServer(opts ServerOpts) *Server {
 		opts.Logger = log.NewLogfmtLogger(os.Stderr)
 		opts.Logger = log.With(opts.Logger, "ID", opts.ID)
 	}
+	chain, err := core.NewBlockChain(genesisBlock())
+	if err != nil {
+		return nil, err
+	}
 
 	s := &Server{
-		opts,
-		NewTxPool(),
-		opts.PrivateKey != nil,
-		make(chan RPC),
-		make(chan struct{}),
+		ServerOpts:  opts,
+		MemPool:     NewTxPool(),
+		IsValidator: opts.PrivateKey != nil,
+		RpcCh:       make(chan RPC),
+		QuitChan:    make(chan struct{}),
+		chain:       chain,
 	}
 
 	s.ServerOpts = opts
@@ -76,7 +83,7 @@ func NewServer(opts ServerOpts) *Server {
 	if s.IsValidator {
 		go s.ValidatorLoop()
 	}
-	return s
+	return s, nil
 }
 
 func (s *Server) Start() {
@@ -149,17 +156,13 @@ func (s *Server) processTransaction(tx *core.Transaction) error {
 
 	s.Logger.Log(
 		"msg", "add transaction to mempool",
-		"hash", hash ,
+		"hash", hash,
 		"mempoollen", s.MemPool.Len(),
 	)
 
 	go s.broadcastTx(tx)
 
 	return s.MemPool.Add(tx)
-}
-func (s *Server) CreateNewBlock() error {
-	fmt.Println("create a new block")
-	return nil
 }
 
 func (s *Server) broadcastTx(tx *core.Transaction) error {
@@ -182,4 +185,37 @@ func (s *Server) initTransports() {
 			}
 		}(tr)
 	}
+}
+func (s *Server) CreateNewBlock() error {
+	currentHeader, err := s.chain.GetHeader(s.chain.Height())
+	if err != nil {
+		return err
+	}
+
+	block, err := core.NewBlockFromHeader(currentHeader, nil)
+	if err != nil {
+		return err
+	}
+
+	if err := block.Sign(*s.PrivateKey); err != nil {
+		return err
+	}
+
+	if err := s.chain.AddBlock(block); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func genesisBlock() *core.Block {
+	header := &core.Header{
+		Version:   1,
+		DataHash:  types.Hash{},
+		Timestamp: uint64(time.Now().UnixNano()),
+		Height:    0,
+	}
+
+	b, _ := core.NewBlock(header, nil)
+	return b
 }

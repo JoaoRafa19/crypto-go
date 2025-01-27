@@ -38,8 +38,9 @@ func TestSortTransactions(t *testing.T) {
 		tx := core.NewTransaction([]byte(strconv.FormatInt(int64(i), 10)))
 		// Gera um valor exclusivo e suficientemente aleatório para FirstSeen
 		r := rand.New(rand.NewSource(time.Now().UnixNano()))
-		randomDelay := int64(r.Intn(1000)) // Adiciona uma variação aleatória
-		tx.SetFirstSeen(time.Now().UnixNano() * randomDelay * int64(i))
+		randomDelay := int64(r.Intn(1000) + 1) // Adiciona uma variação aleatória e evita 0
+		tx.SetFirstSeen(time.Now().UnixNano() * randomDelay * int64(i+1)) // evita 0
+		
 		assert.Nil(t, p.Add(tx))
 	}
 
@@ -48,6 +49,9 @@ func TestSortTransactions(t *testing.T) {
 	txx := p.Transactions()
 
 	for i := 0; i < len(txx)-1; i++ {
-		assert.True(t, txx[i].GetFirstSeen() < txx[i+1].GetFirstSeen())
+		
+		x := txx[i].GetFirstSeen()
+		x1 := txx[i+1].GetFirstSeen()
+		assert.True(t, x < x1)
 	}
 }

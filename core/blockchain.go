@@ -17,6 +17,7 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+
 type BlockChain struct {
 	Store     Storage
 	Lock      sync.RWMutex

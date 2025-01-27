@@ -14,6 +14,7 @@ import (
 	"bytes"
 	"crypto/ecdsa"
 	"encoding/gob"
+	"log"
 	"math/big"
 	"math/rand"
 	"strconv"
@@ -60,8 +61,10 @@ func main() {
 		ID:         "LOCAL",
 	}
 
-	s := network.NewServer(opts)
-
+	s, err := network.NewServer(opts)
+	if err != nil {
+		log.Fatal(err)
+	}
 	s.Start()
 }
 
