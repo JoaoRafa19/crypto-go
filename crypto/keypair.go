@@ -5,49 +5,76 @@ import (
 	"crypto/elliptic"
 	"crypto/rand"
 	"crypto/sha256"
+	"fmt"
 	"math/big"
 
 	"github.com/JoaoRafa19/crypto-go/types"
 )
 
 type PrivateKey struct {
-	key *ecdsa.PrivateKey
+	Key *ecdsa.PrivateKey
 }
 
 func (k PrivateKey) Sign(data []byte) (*Signature, error) {
-	r, s, err := ecdsa.Sign(rand.Reader, k.key, data)
+	r, s, err := ecdsa.Sign(rand.Reader, k.Key, data)
 	if err != nil {
 		return nil, err
 	}
 
 	return &Signature{
-		s: s,
-		r: r,
+		S: s,
+		R: r,
 	}, nil
 }
 
 func GeneratePrivateKey() PrivateKey {
+
 	key, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
 	if err != nil {
 		panic(err)
 	}
 	return PrivateKey{
-		key: key,
+		Key: key,
 	}
 }
 
 type PublicKey struct {
-	key *ecdsa.PublicKey
+	Key *ecdsa.PublicKey
 }
 
 func (k PrivateKey) PublicKey() PublicKey {
 	return PublicKey{
-		key: &k.key.PublicKey,
+		Key: &k.Key.PublicKey,
 	}
 }
 
+func (k PrivateKey) ToBytes() []byte {
+	return k.Key.D.Bytes()
+}
+
+func PrivateKeyFromBytes(data []byte) (PrivateKey, error) {
+	d := new(big.Int).SetBytes(data)
+	privKey := new(ecdsa.PrivateKey)
+	privKey.PublicKey.Curve = elliptic.P256()
+	privKey.D = d
+	privKey.PublicKey.X, privKey.PublicKey.Y = elliptic.P256().ScalarBaseMult(d.Bytes())
+	return PrivateKey{Key: privKey}, nil
+}
+
+func (k PublicKey) ToBytes() []byte {
+	return elliptic.MarshalCompressed(k.Key, k.Key.X, k.Key.Y)
+}
+
+func PublicKeyFromBytes(data []byte) (PublicKey, error) {
+	x, y := elliptic.UnmarshalCompressed(elliptic.P256(), data)
+	if x == nil {
+		return PublicKey{}, fmt.Errorf("invalid public key data")
+	}
+	return PublicKey{Key: &ecdsa.PublicKey{Curve: elliptic.P256(), X: x, Y: y}}, nil
+}
+
 func (k PublicKey) ToSlice() []byte {
-	return elliptic.MarshalCompressed(k.key, k.key.X, k.key.Y)
+	return elliptic.MarshalCompressed(k.Key, k.Key.X, k.Key.Y)
 
 }
 
@@ -58,9 +85,9 @@ func (k PublicKey) Address() types.Address {
 }
 
 type Signature struct {
-	s, r *big.Int
+	S, R *big.Int
 }
 
 func (sig Signature) Verify(pubKey PublicKey, data []byte) bool {
-	return ecdsa.Verify(pubKey.key, data, sig.r, sig.s)
+	return ecdsa.Verify(pubKey.Key, data, sig.R, sig.S)
 }

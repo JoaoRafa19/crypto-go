@@ -1,55 +1,75 @@
+/***************************************************************
+ * Arquivo: local_transport.go
+ * Descrição: Implementação do transporte local.
+ * Autor: JoaoRafa19
+ * Data de criação: 2024-2025
+ * Versão: 0.0.1
+ * Licença: MIT License
+ * Observações:
+ ***************************************************************/
+
 package network
 
 import (
+	"bytes"
 	"fmt"
 	"sync"
 )
 
 type LocalTransport struct {
 	addr      NetAddr
-	peers     map[NetAddr]*LocalTransport
-	lock      sync.RWMutex
-	consumeCh chan RPC
+	Peers     map[NetAddr]*LocalTransport
+	Lock      sync.RWMutex
+	ConsumeCh chan RPC
 }
 
 func NewLocalTransport(addr NetAddr) Transport {
 	return &LocalTransport{
 		addr:      addr,
-		consumeCh: make(chan RPC, 1024),
-		peers:     make(map[NetAddr]*LocalTransport),
+		ConsumeCh: make(chan RPC, 1024),
+		Peers:     make(map[NetAddr]*LocalTransport),
 	}
 }
 
 func (t *LocalTransport) Consume() <-chan RPC {
-	return t.consumeCh
+	return t.ConsumeCh
 
 }
 func (t *LocalTransport) Connect(tr Transport) error {
-	t.lock.Lock()
-	defer t.lock.Unlock()
+	t.Lock.Lock()
+	defer t.Lock.Unlock()
 
-	t.peers[tr.Addr()] = tr.(*LocalTransport)
+	t.Peers[tr.Addr()] = tr.(*LocalTransport)
 
 	return nil
 }
 
 func (t *LocalTransport) SendMessage(to NetAddr, payload []byte) error {
-	t.lock.RLock()
-	defer t.lock.RUnlock()
+	t.Lock.RLock()
+	defer t.Lock.RUnlock()
 
-	perr, ok := t.peers[to]
+	perr, ok := t.Peers[to]
 	if !ok {
 		return fmt.Errorf("%s could not send message to %s", t.addr, to)
 
 	}
 
-	perr.consumeCh <- RPC{
+	perr.ConsumeCh <- RPC{
 		From:    t.addr,
-		Payload: payload,
+		Payload: bytes.NewReader(payload),
 	}
 	return nil
 }
 
 func (t *LocalTransport) Addr() NetAddr {
 	return t.addr
+}
+
+func (t *LocalTransport) Broadcast(payload []byte) error {
+	for _, peer := range t.Peers {
+		if err := t.SendMessage(peer.Addr(), payload); err != nil {
+			return err
+		}
+	}
+	return nil
 }

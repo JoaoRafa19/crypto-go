@@ -1,6 +1,8 @@
 # Teste Aprendendo Conceitos de Blockchain
 
-Generic propose blockchain for uses like office files, criptocurrency
+Made from scratch, generic propose, production ready blockchain for uses like office files, criptocurrency
+Build using TDD
+
 
 **Test Coverage**
 
@@ -8,20 +10,24 @@ Generic propose blockchain for uses like office files, criptocurrency
 
 ## Features
 
-- [ ] Server
+- [v] Server
+	- [X] Creating blocks
 - [X] Block
     - [X] Block's hash
     - [x] Test
 - [X] Transaction
     - [x] Transaction list Hash
     - [x] Test
-- [ ] Key
-- [ ] Transport => tcp, udp, 
+- [x] Key
+- [x] Transport => tcp, udp, 
     - [X] Local transport layer
 - [X] Crypto Keypairs and signature
 - [X] Block Signing
 - [X] Blockchain struct
-- [ ] Storage (not memory storage)
+- [X] Storage (memory storage)
+- [X] Transaction Encoding/Decoding
+- [X] Block Encoding/Decoding
+
 
 
 ## Todos
@@ -65,4 +71,27 @@ func (tx Transaction) Sign(privKey crypto.PrivateKey) error {
 **`fixed`**:
  ```go
 func (tx *Transaction) Sign(privKey crypto.PrivateKey) error {
-````
+```
+
+## Instalação
+
+Para instalar as dependências do projeto, execute:
+```bash
+go mod tidy
+```
+Para executar o projeto 
+```
+make run
+```
+
+## Como Contribuir
+
+1. Faça um fork do projeto
+2. Crie uma nova branch (`git checkout -b feature/nome-da-feature`)
+3. Faça commit das suas alterações (`git commit -am 'Adiciona nova feature'`)
+4. Faça push para a branch (`git push origin feature/nome-da-feature`)
+5. Abra um Pull Request
+
+## Licença
+
+Este projeto está licenciado sob a Licença MIT - veja o arquivo [LICENSE](LICENSE) para mais detalhes.

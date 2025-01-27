@@ -1,3 +1,13 @@
+/***************************************************************
+ * Arquivo: hasher.go
+ * Descrição: Implementação da interface de hash.
+ * Autor: JoaoRafa19
+ * Data de criação: 2024-2025
+ * Versão: 0.0.1
+ * Licença: MIT License
+ * Observações: 
+ ***************************************************************/
+
 package core
 
 import (
@@ -12,8 +22,16 @@ type Hasher[T any] interface {
 
 type BlockHasher struct{}
 
-func (BlockHasher) Hash(b *Block) types.Hash {
+func (BlockHasher) Hash(b *Header) types.Hash {
 
-	h := sha256.Sum256(b.HeaderData())
+	h := sha256.Sum256(b.Bytes())
 	return types.Hash(h)
+}
+
+type TxHasher struct {
+
+}
+
+func (TxHasher) Hash(tx*Transaction) types.Hash {
+	return types.Hash(sha256.Sum256(tx.Data)) 
 }
