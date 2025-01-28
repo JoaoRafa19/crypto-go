@@ -58,7 +58,7 @@ func NewServer(opts ServerOpts) (*Server, error) {
 		opts.Logger = log.NewLogfmtLogger(os.Stderr)
 		opts.Logger = log.With(opts.Logger, "ID", opts.ID)
 	}
-	chain, err := core.NewBlockChain(genesisBlock())
+	chain, err := core.NewBlockChain(opts.Logger, genesisBlock())
 	if err != nil {
 		return nil, err
 	}
@@ -165,6 +165,11 @@ func (s *Server) processTransaction(tx *core.Transaction) error {
 	return s.MemPool.Add(tx)
 }
 
+func (s *Server) broadcastBlock(b *core.Block) error {
+
+	return nil
+}
+
 func (s *Server) broadcastTx(tx *core.Transaction) error {
 	buf := &bytes.Buffer{}
 
@@ -192,7 +197,14 @@ func (s *Server) CreateNewBlock() error {
 		return err
 	}
 
-	block, err := core.NewBlockFromHeader(currentHeader, nil)
+	//TODO (@JoaoRafa):
+	// For now we are going to use all transactions in mempool
+	// But we need to know the internal structure of transaction
+	// to implement some complexity function to determine how many
+	// transactions can be stored in a block.
+	txx := s.MemPool.Transactions()
+
+	block, err := core.NewBlockFromHeader(currentHeader, txx)
 	if err != nil {
 		return err
 	}
@@ -205,6 +217,8 @@ func (s *Server) CreateNewBlock() error {
 		return err
 	}
 
+	s.MemPool.Flush()
+
 	return nil
 }
 
@@ -212,7 +226,7 @@ func genesisBlock() *core.Block {
 	header := &core.Header{
 		Version:   1,
 		DataHash:  types.Hash{},
-		Timestamp: uint64(time.Now().UnixNano()),
+		Timestamp: 000000,
 		Height:    0,
 	}
 

@@ -50,7 +50,7 @@ func (t *LocalTransport) SendMessage(to NetAddr, payload []byte) error {
 
 	perr, ok := t.Peers[to]
 	if !ok {
-		return fmt.Errorf("%s could not send message to %s", t.addr, to)
+		return fmt.Errorf("%s could not send message to unkown peer %s", t.addr, to)
 
 	}
 

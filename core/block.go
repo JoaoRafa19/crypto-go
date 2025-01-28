@@ -41,7 +41,7 @@ func (h *Header) Bytes() []byte {
 // Hold the transactions and the header information
 type Block struct {
 	*Header
-	Transactions []Transaction
+	Transactions []*Transaction
 	Validator    crypto.PublicKey
 	Signature    *crypto.Signature
 
@@ -50,14 +50,14 @@ type Block struct {
 	hash types.Hash
 }
 
-func NewBlock(h *Header, tsc []Transaction) (*Block, error ) {
+func NewBlock(h *Header, tsc []*Transaction) (*Block, error ) {
 	return &Block{
 		Header:       h,
 		Transactions: tsc,
 	}, nil
 }
 
-func NewBlockFromHeader(prevHeader *Header, txx []Transaction) (*Block, error) {
+func NewBlockFromHeader(prevHeader *Header, txx []*Transaction) (*Block, error) {
 	dataHash, err := CalculateDataHash(txx)
 	if err != nil {
 		return nil, err
@@ -75,7 +75,7 @@ func NewBlockFromHeader(prevHeader *Header, txx []Transaction) (*Block, error) {
 }
 
 func (b *Block) AddTransaction(tx *Transaction) {
-	b.Transactions = append(b.Transactions, *tx)
+	b.Transactions = append(b.Transactions, tx)
 }
 
 func (b *Block) Verify() error {
@@ -131,7 +131,7 @@ func (b *Block) Hash(hasher Hasher[*Header]) types.Hash {
 	return b.hash
 }
 
-func CalculateDataHash(txx []Transaction) (hash types.Hash, err error) {
+func CalculateDataHash(txx []*Transaction) (hash types.Hash, err error) {
 	var (
 		buf = &bytes.Buffer{}
 	)
