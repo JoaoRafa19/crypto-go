@@ -12,6 +12,9 @@ Build using TDD
 
 - [v] Server
 	- [X] Creating blocks
+	- [x] Connecting transports
+	- [x] Broadcasting transactions
+	- [ ] Broadcasting block
 - [X] Block
     - [X] Block's hash
     - [x] Test
