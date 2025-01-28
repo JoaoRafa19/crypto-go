@@ -4,6 +4,7 @@ Made from scratch, generic propose, production ready blockchain for uses like of
 Build using TDD
 
 
+
 **Test Coverage**
 
 ![Coverage](coverage/badge.svg)
@@ -82,9 +83,31 @@ Para instalar as dependências do projeto, execute:
 ```bash
 go mod tidy
 ```
-Para executar o projeto 
+
+Certifique-se de estar utilizando a versão 1.18.1 do Go:
+```bash
+go version
 ```
+Se necessário, instale a versão 1.18.1 do Go.
+
+Para executar o projeto:
+```bash
 make run
+```
+ou 
+```bash
+go run .
+```
+
+## Testes
+
+Para executar os testes, utilize:
+```bash
+make test
+```
+ou
+```bash
+go test ./...
 ```
 
 ## Como Contribuir
