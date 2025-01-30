@@ -39,7 +39,7 @@ func randomBlock(t *testing.T, height uint32, prevBlockHas types.Hash) *Block {
 		Version:       1,
 		PrevBlockHash: prevBlockHas,
 		Height:        height,
-		Timestamp:     uint64(time.Now().UnixNano()),
+		Timestamp:     time.Now().UnixNano(),
 	}
 
 	b, err := NewBlock(header, []*Transaction{tx})

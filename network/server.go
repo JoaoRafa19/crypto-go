@@ -39,7 +39,7 @@ type ServerOpts struct {
 
 type Server struct {
 	ServerOpts
-	MemPool     *TxPool
+	mempool     *TxPool
 	IsValidator bool
 	RpcCh       chan RPC
 	chain       *core.BlockChain
@@ -65,7 +65,7 @@ func NewServer(opts ServerOpts) (*Server, error) {
 
 	s := &Server{
 		ServerOpts:  opts,
-		MemPool:     NewTxPool(),
+		mempool:     NewTxPool(1000),
 		IsValidator: opts.PrivateKey != nil,
 		RpcCh:       make(chan RPC),
 		QuitChan:    make(chan struct{}),
@@ -144,7 +144,7 @@ func (s *Server) broadcast(payload []byte) error {
 func (s *Server) processTransaction(tx *core.Transaction) error {
 	hash := tx.Hash(core.TxHasher{})
 
-	if s.MemPool.Contains(hash) {
+	if s.mempool.Contains(hash) {
 		return nil
 	}
 
@@ -154,15 +154,17 @@ func (s *Server) processTransaction(tx *core.Transaction) error {
 
 	tx.SetFirstSeen(time.Now().UnixNano())
 
-	s.Logger.Log(
-		"msg", "add transaction to mempool",
-		"hash", hash,
-		"mempoollen", s.MemPool.Len(),
-	)
+	// s.Logger.Log(
+	// 	"msg", "add transaction to mempool",
+	// 	"hash", hash,
+	// 	"mempoollen", s.MemPool.Len(),
+	// )
 
 	go s.broadcastTx(tx)
 
-	return s.MemPool.Add(tx)
+	s.mempool.Add(tx)
+
+	return nil
 }
 
 func (s *Server) broadcastBlock(b *core.Block) error {
@@ -202,7 +204,7 @@ func (s *Server) CreateNewBlock() error {
 	// But we need to know the internal structure of transaction
 	// to implement some complexity function to determine how many
 	// transactions can be stored in a block.
-	txx := s.MemPool.Transactions()
+	txx := s.mempool.Pending()
 
 	block, err := core.NewBlockFromHeader(currentHeader, txx)
 	if err != nil {
@@ -217,7 +219,9 @@ func (s *Server) CreateNewBlock() error {
 		return err
 	}
 
-	s.MemPool.Flush()
+	s.mempool.ClearPending()
+
+	go s.broadcastBlock(block)
 
 	return nil
 }

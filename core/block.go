@@ -25,7 +25,7 @@ import (
 type Header struct {
 	Version       uint32
 	PrevBlockHash types.Hash
-	Timestamp     uint64
+	Timestamp     int64
 	Height        uint32
 	DataHash      types.Hash
 }
@@ -50,7 +50,7 @@ type Block struct {
 	hash types.Hash
 }
 
-func NewBlock(h *Header, tsc []*Transaction) (*Block, error ) {
+func NewBlock(h *Header, tsc []*Transaction) (*Block, error) {
 	return &Block{
 		Header:       h,
 		Transactions: tsc,
@@ -68,7 +68,7 @@ func NewBlockFromHeader(prevHeader *Header, txx []*Transaction) (*Block, error) 
 		Height:        prevHeader.Height + 1,
 		DataHash:      dataHash,
 		PrevBlockHash: BlockHasher{}.Hash(prevHeader),
-		Timestamp:     uint64(time.Now().UnixNano()),
+		Timestamp:     time.Now().UnixNano(),
 	}
 
 	return NewBlock(header, txx)

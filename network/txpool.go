@@ -1,94 +1,125 @@
-/***************************************************************
- * Arquivo: txpool.go
- * Descrição: Implementação do pool de transações.
- * Autor: JoaoRafa19
- * Data de criação: 2024-2025
- * Versão: 0.0.1
- * Licença: MIT License
- * Observações:
- ***************************************************************/
-
 package network
 
 import (
-	"sort"
+	"sync"
 
 	"github.com/JoaoRafa19/crypto-go/core"
 	"github.com/JoaoRafa19/crypto-go/types"
 )
 
-type TxMapSorter struct {
-	Transations []*core.Transaction
-}
-
-func NewTxMapSorter(txMap map[types.Hash]*core.Transaction) *TxMapSorter {
-	txx := make([]*core.Transaction, len(txMap))
-	i := 0
-	for _, tx := range txMap {
-		txx[i] = tx
-		i++
-	}
-
-	s := &TxMapSorter{Transations: txx}
-
-	sort.Sort(s)
-
-	return s
-}
-
-func (s *TxMapSorter) Len() int {
-	return len(s.Transations)
-}
-
-// Swap
-func (s *TxMapSorter) Swap(i, j int) {
-	s.Transations[i], s.Transations[j] = s.Transations[j], s.Transations[i]
-}
-
-// Less
-func (s *TxMapSorter) Less(i, j int) bool {
-	return s.Transations[i].GetFirstSeen() < s.Transations[j].GetFirstSeen()
-}
-
 type TxPool struct {
-	trxs map[types.Hash]*core.Transaction
+	all     *TxSortedMap
+	pending *TxSortedMap
+	// The maxLength of the total pool of transactions.
+	// When the pool is full we will prune the oldest transaction.
+	maxLength int
 }
 
-func NewTxPool() *TxPool {
+func NewTxPool(maxLength int) *TxPool {
 	return &TxPool{
-		trxs: make(map[types.Hash]*core.Transaction),
+		all:       NewTxSortedMap(),
+		pending:   NewTxSortedMap(),
+		maxLength: maxLength,
 	}
 }
 
-// Transactions returns a slice of all transactions in the pool.
-func (p *TxPool) Transactions() []*core.Transaction {
-	s := NewTxMapSorter(p.trxs)
-	return s.Transations
-}
-
-// Add adds a transaction to the pool. The caller is responsible for checking
-// if the transaction already exists in the pool.
-func (p *TxPool) Add(tx *core.Transaction) error {
-	hash := tx.Hash(core.TxHasher{})
-	if p.Contains(hash) {
-		return nil
+func (p *TxPool) Add(tx *core.Transaction) {
+	// prune the oldest transaction that is sitting in the all pool
+	if p.all.Count() == p.maxLength {
+		oldest := p.all.First()
+		p.all.Remove(oldest.Hash(core.TxHasher{}))
 	}
-	p.trxs[hash] = tx
-	return nil
+
+	if !p.all.Contains(tx.Hash(core.TxHasher{})) {
+		p.all.Add(tx)
+		p.pending.Add(tx)
+	}
 }
 
-// Has checks if a transaction with the given hash exists in the pool.
 func (p *TxPool) Contains(hash types.Hash) bool {
-	_, ok := p.trxs[hash]
+	return p.all.Contains(hash)
+}
+
+// Pending returns a slice of transactions that are in the pending pool
+func (p *TxPool) Pending() []*core.Transaction {
+	return p.pending.txx.Data
+}
+
+func (p *TxPool) ClearPending() {
+	p.pending.Clear()
+}
+
+func (p *TxPool) PendingCount() int {
+	return p.pending.Count()
+}
+
+type TxSortedMap struct {
+	lock   sync.RWMutex
+	lookup map[types.Hash]*core.Transaction
+	txx    *types.List[*core.Transaction]
+}
+
+func NewTxSortedMap() *TxSortedMap {
+	return &TxSortedMap{
+		lookup: make(map[types.Hash]*core.Transaction),
+		txx:    types.NewList[*core.Transaction](),
+	}
+}
+
+func (t *TxSortedMap) First() *core.Transaction {
+	t.lock.RLock()
+	defer t.lock.RUnlock()
+
+	first := t.txx.Get(0)
+	return t.lookup[first.Hash(core.TxHasher{})]
+}
+
+func (t *TxSortedMap) Get(h types.Hash) *core.Transaction {
+	t.lock.RLock()
+	defer t.lock.RUnlock()
+
+	return t.lookup[h]
+}
+
+func (t *TxSortedMap) Add(tx *core.Transaction) {
+	hash := tx.Hash(core.TxHasher{})
+
+	t.lock.Lock()
+	defer t.lock.Unlock()
+
+	if _, ok := t.lookup[hash]; !ok {
+		t.lookup[hash] = tx
+		t.txx.Insert(tx)
+	}
+}
+
+func (t *TxSortedMap) Remove(h types.Hash) {
+	t.lock.Lock()
+	defer t.lock.Unlock()
+
+	t.txx.Remove(t.lookup[h])
+	delete(t.lookup, h)
+}
+
+func (t *TxSortedMap) Count() int {
+	t.lock.RLock()
+	defer t.lock.RUnlock()
+
+	return len(t.lookup)
+}
+
+func (t *TxSortedMap) Contains(h types.Hash) bool {
+	t.lock.RLock()
+	defer t.lock.RUnlock()
+
+	_, ok := t.lookup[h]
 	return ok
 }
 
-// Len returns the number of transactions currently in the pool.
-func (p *TxPool) Len() int {
-	return len(p.trxs)
-}
+func (t *TxSortedMap) Clear() {
+	t.lock.Lock()
+	defer t.lock.Unlock()
 
-// Flush removes all transactions from the pool.
-func (p *TxPool) Flush() {
-	p.trxs = make(map[types.Hash]*core.Transaction)
+	t.lookup = make(map[types.Hash]*core.Transaction)
+	t.txx.Clear()
 }

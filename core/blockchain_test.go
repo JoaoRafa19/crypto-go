@@ -57,7 +57,7 @@ func TestGetHeader(t *testing.T) {
 }
 
 func newBlockChainWithGenesis(t *testing.T) *BlockChain {
-	bc, err := NewBlockChain(randomBlock(t, 0, types.Hash{}))
+	bc, err := NewBlockChain(nil, randomBlock(t, 0, types.Hash{}))
 	assert.Nil(t, err)
 	return bc
 }

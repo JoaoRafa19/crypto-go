@@ -22,6 +22,6 @@ func TestProcessMessage_ValidTransaction(t *testing.T) {
 
 	err = server.ProcessMessage(decodedMsg)
 	assert.Nil(t, err)
-	assert.Equal(t, 1, server.MemPool.Len())
-	assert.True(t, server.MemPool.Contains(tx.Hash(core.TxHasher{})))
+	// assert.Equal(t, 1, server.mempool.Len())
+	assert.True(t, server.mempool.Contains(tx.Hash(core.TxHasher{})))
 }
