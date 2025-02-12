@@ -60,6 +60,15 @@ func main() {
 		}
 	}()
 
+	go func() {
+
+		time.Sleep(16 * time.Second)
+		trLate := network.NewLocalTransport("LATE_REMOTE")
+		trRemoteC.Connect(trLate)
+		lateServer := makeServer(string(trLate.Addr()), trLate, nil)
+		go lateServer.Start()
+	}()
+
 	privKey := crypto.GeneratePrivateKey()
 
 	localServer := makeServer("LOCAL", trLocal, &privKey)
@@ -96,7 +105,7 @@ func sendTransaction(tr network.Transport, to network.NetAddr) error {
 	tx.Sign(privKey)
 	buf := &bytes.Buffer{}
 
-	if err := tx.Encode(core.NewGobEncoder(buf)); err != nil {
+	if err := tx.Encode(core.NewGobTxEncoder(buf)); err != nil {
 		return err
 	}
 

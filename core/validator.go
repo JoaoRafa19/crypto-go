@@ -22,7 +22,7 @@ func (v *BlockValidator) ValidateBlock(b *Block) error {
 	}
 
 	if b.Height != v.Bc.Height()+1 {
-		return fmt.Errorf("block (%s) too high", b.Hash(BlockHasher{}))
+		return fmt.Errorf("block (%s) with heigh (%d) is too high => current height (%d)", b.Hash(BlockHasher{}), b.Height, v.Bc.Height())
 	}
 
 	prevHeader, err := v.Bc.GetHeader(b.Height - 1)

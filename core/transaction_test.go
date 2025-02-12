@@ -48,7 +48,7 @@ func TestVerifyTransaction(t *testing.T) {
 func TestTxEncodeDecode(t *testing.T) {
 	tx := randomTxWithSignature(t)
 	buf := &bytes.Buffer{}
-	assert.Nil(t, tx.Encode(NewGobEncoder(buf)))
+	assert.Nil(t, tx.Encode(NewGobTxEncoder(buf)))
 
 	txDecoded := new(Transaction)
 	assert.Nil(t, txDecoded.Decode(NewGobDecoder(buf)))
