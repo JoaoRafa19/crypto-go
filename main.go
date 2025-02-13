@@ -18,7 +18,6 @@ import (
 	"log"
 	"math/big"
 	"math/rand"
-	"strconv"
 	"time"
 
 	"github.com/JoaoRafa19/crypto-go/core"
@@ -99,8 +98,11 @@ func makeServer(id string, tr network.Transport, privKey *crypto.PrivateKey) *ne
 
 func sendTransaction(tr network.Transport, to network.NetAddr) error {
 	privKey := crypto.GeneratePrivateKey()
+	n1 := rand.Intn(10)
+	n2 := rand.Intn(10)
 
-	data := []byte(strconv.FormatInt(int64(rand.Intn(10000000000000)), 10))
+	data := []byte{byte(n1), 0x0a, byte(n2), 0x0a, 0x0b}
+	fmt.Println(n1, " + ", n2)
 	tx := core.NewTransaction(data)
 	tx.Sign(privKey)
 	buf := &bytes.Buffer{}

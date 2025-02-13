@@ -30,7 +30,7 @@ func NewBlockChain(l log.Logger, genesis *Block) (*BlockChain, error) {
 	bc := &BlockChain{
 		Headers: []*Header{},
 		Store:   NewMemStore(),
-		Logger: l,
+		Logger:  l,
 	}
 	bc.Validator = NewBlockValidator(bc)
 	err := bc.addBlockWithoutValidation(genesis)
@@ -47,6 +47,17 @@ func (bc *BlockChain) AddBlock(b *Block) error {
 	err := bc.Validator.ValidateBlock(b)
 	if err != nil {
 		return err
+	}
+
+	// run vm code
+	for _, tx := range b.Transactions {
+
+		vm := NewVM(tx.Data)
+		bc.Logger.Log("msg", "executing code", "len", len(tx.Data), "hash", tx.Hash(&TxHasher{}))
+		if err := vm.Run(); err != nil {
+			return err
+		}
+		bc.Logger.Log("\nvm result", vm.stack.Last())
 	}
 
 	return bc.addBlockWithoutValidation(b)

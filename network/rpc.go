@@ -25,6 +25,7 @@ type MessageType byte
 const (
 	MessageTypeTx MessageType = iota
 	MessageTypeBlock
+	MessageTypeGetBlocks // get blocks if pair is out of sync
 )
 
 type Message struct {
