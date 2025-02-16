@@ -3,47 +3,77 @@ package core
 type Instruction byte
 
 const (
-	InstrPush Instruction = iota + 10
+	InstrPushInt Instruction = iota + 10
 	InstrAdd
+	InstrPushByte
+	InstrPack
 )
 
-type Stack struct {
-	arr []byte
+// Actualy a stack is FILO we need a Queue
+
+// FIFO
+type Queue struct {
+	data []any
+	sp   int
 }
 
-// Push data to the Stack and returns the stack lenght
-func (s *Stack) Push(data byte) int {
-	s.arr = append(s.arr, data)
-	return len(s.arr) - 1
+func NewQueue(size ...int) *Queue {
+	if len(size) > 0 {
+		return &Queue{
+			data: make([]any, size[0]),
+			sp:   0,
+		}
+	}
+	return &Queue{
+		data: []any{},
+		sp:   0,
+	}
 }
 
-func (s *Stack) Pop() byte {
-	data := s.arr[s.LastIndex()]
-	s.arr = s.arr[:s.LastIndex()-1]
+// Push data to the Queue and returns the stack lenght
+func (s *Queue) Push(data any) {
+	s.data = append(s.data, data)
+	s.sp++
+}
+
+func (s *Queue) Pop() any {
+	data := s.data[0]
+	s.data = s.data[1:]
+	s.sp--
 	return data
 }
 
-func (s *Stack) Last() byte {
-	return s.arr[s.LastIndex()]
+func (s *Queue) Last() any {
+
+	return s.data[s.LastIndex()]
 }
 
-func (s *Stack) LastIndex() int {
-	return len(s.arr) - 1
+func (s *Queue) LastIndex() int {
+	return len(s.data) - 1
 }
 
 type VM struct {
 	data  []byte
 	ip    int // instruction pointer
-	stack *Stack
+	queue *Queue
 	sp    int // stack pointer
 }
 
-func NewVM(data []byte) *VM {
-	return &VM{
-		data:  data,
-		ip:    0,
-		stack: &Stack{},
-		sp:    -1,
+func NewVM(data []byte, queueSize ...int) *VM {
+	if len(queueSize) == 0 {
+
+		return &VM{
+			data:  data,
+			ip:    0,
+			queue: NewQueue(),
+			sp:    -1,
+		}
+	} else {
+		return &VM{
+			data:  data,
+			ip:    0,
+			queue: NewQueue(),
+		}
 	}
 }
 
@@ -65,18 +95,22 @@ func (vm *VM) Run() error {
 
 func (vm *VM) Exec(instr Instruction) error {
 	switch instr {
-	case InstrPush:
-		vm.pushStack(vm.data[vm.ip-1])
+	case InstrPushInt:
+		vm.queue.Push(int(vm.data[vm.ip-1]))
 	case InstrAdd:
-		a := vm.stack.arr[0]
-		b := vm.stack.arr[1]
+		a := vm.queue.Pop().(int)
+		b := vm.queue.Pop().(int)
 		c := a + b
-		vm.pushStack(c)
+		vm.queue.Push(c)
+	case InstrPushByte:
+		vm.queue.Push(vm.data[vm.ip-1])
+	case InstrPack:
+		n := vm.queue.Pop().(int)
+		b := make([]byte, n)
+		for i := 0; i < n; i++ {
+			b[i] = vm.queue.Pop().(byte)
+		}
+		vm.queue.Push(b)
 	}
 	return nil
-}
-
-func (vm *VM) pushStack(b byte) {
-	vm.sp++
-	vm.stack.Push(b)
 }

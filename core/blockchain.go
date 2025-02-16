@@ -57,7 +57,7 @@ func (bc *BlockChain) AddBlock(b *Block) error {
 		if err := vm.Run(); err != nil {
 			return err
 		}
-		bc.Logger.Log("\nvm result", vm.stack.Last())
+		bc.Logger.Log("\nvm result", vm.queue.Last())
 	}
 
 	return bc.addBlockWithoutValidation(b)
