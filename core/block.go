@@ -137,7 +137,7 @@ func CalculateDataHash(txx []*Transaction) (hash types.Hash, err error) {
 	)
 
 	for _, tx := range txx {
-		if err = tx.Encode(NewGobEncoder(buf)); err != nil {
+		if err = tx.Encode(NewGobTxEncoder(buf)); err != nil {
 			return
 		}
 	}

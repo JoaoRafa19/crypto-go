@@ -127,6 +127,8 @@ func (s *Server) ProcessMessage(message *DecodedMessage) error {
 	switch msg := message.Data.(type) {
 	case *core.Transaction:
 		return s.processTransaction(msg)
+	case *core.Block:
+		return s.processBlock(msg)
 	default:
 		return fmt.Errorf("unknown message type: %T", msg)
 	}
@@ -157,7 +159,7 @@ func (s *Server) processTransaction(tx *core.Transaction) error {
 	// s.Logger.Log(
 	// 	"msg", "add transaction to mempool",
 	// 	"hash", hash,
-	// 	"mempoollen", s.MemPool.Len(),
+	// 	"mempoolPending", s.mempool.PendingCount(),
 	// )
 
 	go s.broadcastTx(tx)
@@ -168,14 +170,20 @@ func (s *Server) processTransaction(tx *core.Transaction) error {
 }
 
 func (s *Server) broadcastBlock(b *core.Block) error {
+	buf := &bytes.Buffer{}
+	if err := b.Encode(core.NewGobBlockEncoder(buf)); err != nil {
+		return err
+	}
+	msg := NewMessage(MessageTypeBlock, buf.Bytes())
 
-	return nil
+	return s.broadcast(msg.Bytes())
+
 }
 
 func (s *Server) broadcastTx(tx *core.Transaction) error {
 	buf := &bytes.Buffer{}
 
-	if err := tx.Encode(core.NewGobEncoder(buf)); err != nil {
+	if err := tx.Encode(core.NewGobTxEncoder(buf)); err != nil {
 		return err
 	}
 
@@ -193,6 +201,18 @@ func (s *Server) initTransports() {
 		}(tr)
 	}
 }
+
+// Processes the validated block and add to the blockchain
+func (s *Server) processBlock(b *core.Block) error {
+	if err := s.chain.AddBlock(b); err != nil {
+		return err
+	}
+
+	go s.broadcastBlock(b)
+
+	return nil
+}
+
 func (s *Server) CreateNewBlock() error {
 	currentHeader, err := s.chain.GetHeader(s.chain.Height())
 	if err != nil {

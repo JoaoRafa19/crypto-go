@@ -1,6 +1,7 @@
 package core
 
 import (
+	"bytes"
 	"testing"
 	"time"
 
@@ -52,4 +53,16 @@ func randomBlock(t *testing.T, height uint32, prevBlockHas types.Hash) *Block {
 	assert.Nil(t, b.Sign(privKey))
 
 	return b
+}
+
+func TestDecodeEncodeBlock(t *testing.T) {
+	b := randomBlock(t, 1, types.Hash{})
+
+	buffer := &bytes.Buffer{}
+
+	assert.Nil(t, b.Encode(NewGobBlockEncoder(buffer)))
+	bDecode := new(Block)
+
+	assert.Nil(t, bDecode.Decode(NewGobBlockDecoder(buffer)))
+	assert.Equal(t, b, bDecode)
 }

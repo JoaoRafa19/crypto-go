@@ -23,8 +23,9 @@ import (
 type MessageType byte
 
 const (
-	MessageTypeTx MessageType = 0x0
+	MessageTypeTx MessageType = iota
 	MessageTypeBlock
+	MessageTypeGetBlocks // get blocks if pair is out of sync
 )
 
 type Message struct {
@@ -66,7 +67,7 @@ func DefaultRPCDecodeFunc(rpc RPC) (*DecodedMessage, error) {
 		"from": rpc.From,
 		"type": msg.Header,
 	}).Debug("new incomming message")
-	
+
 	switch msg.Header {
 	case MessageTypeTx:
 		tx := new(core.Transaction)
@@ -74,6 +75,15 @@ func DefaultRPCDecodeFunc(rpc RPC) (*DecodedMessage, error) {
 			return nil, err
 		}
 		return &DecodedMessage{From: rpc.From, Data: tx}, nil
+	case MessageTypeBlock:
+		block := new(core.Block)
+		if err := block.Decode(core.NewGobBlockDecoder(bytes.NewReader(msg.Data))); err != nil {
+			return nil, err
+		}
+		return &DecodedMessage{
+			From: rpc.From,
+			Data: block,
+		}, nil
 	default:
 		return nil, fmt.Errorf("invalid message header %d", msg.Header)
 	}
